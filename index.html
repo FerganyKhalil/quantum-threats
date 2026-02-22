@@ -1,0 +1,1230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Quantum Threats — Shor's Algorithm</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@300;400;600;700&display=swap');
+
+  :root {
+    --bg: #f8f8f6;
+    --white: #ffffff;
+    --text: #1a1a1a;
+    --muted: #666;
+    --light: #e8e8e4;
+    --border: #d8d8d4;
+    --accent: #2563eb;
+    --accent-bg: #eff6ff;
+    --red: #dc2626;
+    --red-bg: #fef2f2;
+    --green: #16a34a;
+    --green-bg: #f0fdf4;
+    --yellow: #ca8a04;
+    --yellow-bg: #fefce8;
+    --mono: 'IBM Plex Mono', monospace;
+    --sans: 'IBM Plex Sans', sans-serif;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    font-size: 15px;
+    line-height: 1.6;
+    min-height: 100vh;
+  }
+
+  /* ── HEADER ── */
+  header {
+    background: var(--white);
+    border-bottom: 1px solid var(--border);
+    padding: 32px 0 0;
+  }
+
+  .header-inner {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 0 24px;
+  }
+
+  .eyebrow {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--red);
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .eyebrow::before {
+    content: '';
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    background: var(--red);
+    border-radius: 50%;
+    animation: blink 1.5s ease-in-out infinite;
+  }
+
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+  h1 {
+    font-family: var(--sans);
+    font-size: clamp(28px, 5vw, 48px);
+    font-weight: 700;
+    letter-spacing: -1px;
+    line-height: 1.1;
+    margin-bottom: 8px;
+    color: var(--text);
+  }
+
+  h1 span { color: var(--accent); }
+
+  .header-desc {
+    font-size: 14px;
+    color: var(--muted);
+    margin-bottom: 24px;
+    max-width: 560px;
+  }
+
+  /* ── TABS ── */
+  .tabs {
+    display: flex;
+    gap: 0;
+    border-top: 1px solid var(--border);
+    margin-top: 16px;
+  }
+
+  .tab {
+    font-family: var(--sans);
+    font-size: 13px;
+    font-weight: 600;
+    padding: 12px 20px;
+    background: transparent;
+    border: none;
+    border-top: 2px solid transparent;
+    color: var(--muted);
+    cursor: pointer;
+    transition: all 0.15s;
+    margin-top: -1px;
+  }
+
+  .tab:hover { color: var(--text); }
+
+  .tab.active {
+    color: var(--accent);
+    border-top-color: var(--accent);
+    background: var(--bg);
+  }
+
+  /* ── LAYOUT ── */
+  .main {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 32px 24px;
+  }
+
+  .panel { display: none; }
+  .panel.active { display: block; animation: fadeUp 0.2s ease; }
+  @keyframes fadeUp { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }
+
+  /* ── CARDS ── */
+  .card {
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 24px;
+    margin-bottom: 16px;
+  }
+
+  .card-title {
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 16px;
+    font-family: var(--mono);
+  }
+
+  h2 {
+    font-size: 18px;
+    font-weight: 700;
+    margin-bottom: 10px;
+    color: var(--text);
+  }
+
+  p { color: #444; font-size: 14px; line-height: 1.75; }
+
+  /* ── STAT GRID ── */
+  .stat-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin: 16px 0;
+  }
+
+  .stat {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 16px;
+    text-align: center;
+  }
+
+  .stat-val {
+    font-family: var(--mono);
+    font-size: 22px;
+    font-weight: 600;
+    color: var(--accent);
+    display: block;
+    margin-bottom: 4px;
+  }
+
+  .stat-label { font-size: 11px; color: var(--muted); }
+
+  /* ── STEPS ── */
+  .step {
+    display: flex;
+    gap: 16px;
+    padding: 16px 0;
+    border-bottom: 1px solid var(--light);
+  }
+
+  .step:last-child { border-bottom: none; }
+
+  .step-num {
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--accent);
+    background: var(--accent-bg);
+    border: 1px solid #bfdbfe;
+    border-radius: 4px;
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .step-title { font-size: 13px; font-weight: 600; margin-bottom: 4px; }
+  .step-desc { font-size: 13px; color: var(--muted); line-height: 1.65; }
+
+  .formula {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--accent);
+    background: var(--accent-bg);
+    border-left: 3px solid var(--accent);
+    padding: 8px 12px;
+    margin-top: 8px;
+    border-radius: 0 4px 4px 0;
+  }
+
+  /* ── COMPARE ── */
+  .compare-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin: 16px 0;
+  }
+
+  .compare-box {
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 20px;
+  }
+
+  .compare-box.classical { border-top: 3px solid var(--yellow); }
+  .compare-box.quantum { border-top: 3px solid var(--accent); }
+
+  .compare-type {
+    font-family: var(--mono);
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    margin-bottom: 10px;
+  }
+
+  .compare-box.classical .compare-type { color: var(--yellow); }
+  .compare-box.quantum .compare-type { color: var(--accent); }
+
+  .compare-complexity {
+    font-family: var(--mono);
+    font-size: 13px;
+    font-weight: 600;
+    margin: 8px 0;
+    word-break: break-all;
+    line-height: 1.4;
+  }
+
+  .compare-big {
+    font-family: var(--mono);
+    font-size: 24px;
+    font-weight: 600;
+    margin: 8px 0;
+  }
+
+  .compare-box.classical .compare-big { color: var(--yellow); }
+  .compare-box.quantum .compare-big { color: var(--accent); }
+
+  .compare-detail { font-size: 12px; color: var(--muted); line-height: 1.6; }
+
+  /* ── BADGE ── */
+  .badge {
+    display: inline-block;
+    font-family: var(--mono);
+    font-size: 10px;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 3px;
+    letter-spacing: 0.5px;
+  }
+
+  .badge-classical { background: var(--yellow-bg); color: var(--yellow); }
+  .badge-quantum { background: var(--accent-bg); color: var(--accent); }
+  .badge-danger { background: var(--red-bg); color: var(--red); }
+  .badge-safe { background: var(--green-bg); color: var(--green); }
+
+  /* ── TABLE ── */
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th {
+    font-family: var(--mono);
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--muted);
+    text-align: left;
+    padding: 8px 12px;
+    border-bottom: 2px solid var(--border);
+  }
+  td { padding: 12px 12px; border-bottom: 1px solid var(--light); vertical-align: middle; }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: var(--bg); }
+
+  /* ── SPEEDUP BOX ── */
+  .speedup-box {
+    background: var(--red-bg);
+    border: 1px solid #fecaca;
+    border-radius: 6px;
+    padding: 20px;
+    margin: 16px 0;
+    text-align: center;
+  }
+
+  .speedup-num {
+    font-family: var(--mono);
+    font-size: 36px;
+    font-weight: 600;
+    color: var(--red);
+    display: block;
+    margin-bottom: 4px;
+  }
+
+  .speedup-label { font-size: 13px; color: var(--muted); }
+
+  /* ── PROGRESS BAR ── */
+  .prog-row { margin-bottom: 12px; }
+  .prog-label { font-size: 12px; color: var(--muted); margin-bottom: 4px; display: flex; justify-content: space-between; }
+  .prog-bar { height: 10px; background: var(--light); border-radius: 100px; overflow: hidden; }
+  .prog-fill { height: 100%; border-radius: 100px; transition: width 1.2s cubic-bezier(.25,.46,.45,.94); }
+
+  /* ── SIMULATOR ── */
+  .sim-row { display: flex; gap: 12px; align-items: flex-end; flex-wrap: wrap; margin-bottom: 20px; }
+
+  label { font-size: 12px; font-weight: 600; color: var(--muted); display: block; margin-bottom: 4px; }
+
+  select {
+    font-family: var(--mono);
+    font-size: 13px;
+    padding: 8px 12px;
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text);
+    outline: none;
+    cursor: pointer;
+  }
+
+  select:focus { border-color: var(--accent); }
+
+  .btn {
+    font-family: var(--sans);
+    font-size: 13px;
+    font-weight: 600;
+    padding: 9px 20px;
+    border-radius: 6px;
+    border: none;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .btn-primary { background: var(--accent); color: white; }
+  .btn-primary:hover { background: #1d4ed8; }
+  .btn-ghost { background: var(--light); color: var(--text); }
+  .btn-ghost:hover { background: var(--border); }
+
+  /* ── CIRCUIT ── */
+  .circuit {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 20px;
+    font-family: var(--mono);
+    font-size: 12px;
+    margin-bottom: 16px;
+    min-height: 80px;
+    overflow-x: auto;
+  }
+
+  .circuit-row { display: flex; align-items: center; gap: 6px; margin-bottom: 8px; white-space: nowrap; }
+  .circuit-lbl { color: var(--muted); width: 50px; text-align: right; font-size: 11px; flex-shrink: 0; }
+  .circuit-wire { color: var(--border); }
+
+  .gate {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 22px;
+    border: 1px solid;
+    border-radius: 3px;
+    font-size: 9px;
+    font-weight: 600;
+  }
+
+  .g-h { border-color: #bfdbfe; background: var(--accent-bg); color: var(--accent); }
+  .g-x { border-color: #fecaca; background: var(--red-bg); color: var(--red); }
+  .g-u { border-color: #d8b4fe; background: #faf5ff; color: #7c3aed; }
+  .g-m { border-color: #fde68a; background: var(--yellow-bg); color: var(--yellow); }
+
+  /* ── CHART ── */
+  .chart-container {
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: var(--white);
+    overflow: hidden;
+    margin-bottom: 16px;
+    position: relative;
+    height: 180px;
+  }
+
+  .chart-container canvas { width: 100%; height: 100%; }
+
+  /* ── LOG ── */
+  .log {
+    background: #1a1a1a;
+    border-radius: 6px;
+    padding: 16px;
+    font-family: var(--mono);
+    font-size: 12px;
+    line-height: 1.8;
+    max-height: 240px;
+    overflow-y: auto;
+    color: #aaa;
+  }
+
+  .log::-webkit-scrollbar { width: 4px; }
+  .log::-webkit-scrollbar-thumb { background: #333; border-radius: 2px; }
+
+  .lc { color: #60a5fa; }
+  .lr { color: #f87171; }
+  .lp { color: #c084fc; }
+  .ly { color: #fbbf24; }
+  .lg { color: #4ade80; }
+  .ld { color: #555; }
+
+  /* ── RESULTS ── */
+  .result-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 10px;
+    margin: 16px 0;
+  }
+
+  .res-box {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 14px;
+    text-align: center;
+  }
+
+  .res-box.highlight { background: var(--green-bg); border-color: #86efac; }
+
+  .res-label { font-size: 10px; color: var(--muted); font-family: var(--mono); margin-bottom: 6px; display: block; }
+  .res-val { font-family: var(--mono); font-size: 22px; font-weight: 600; color: var(--text); }
+  .res-box.highlight .res-val { color: var(--green); }
+
+  /* ── TIMELINE ── */
+  .timeline { position: relative; padding-left: 20px; }
+  .timeline::before { content:''; position:absolute; left:5px; top:6px; bottom:6px; width:1px; background:var(--border); }
+
+  .tl-item { position:relative; margin-bottom:20px; }
+  .tl-dot { position:absolute; left:-18px; top:4px; width:8px; height:8px; background:var(--accent); border-radius:50%; border:2px solid white; box-shadow:0 0 0 1px var(--border); }
+  .tl-item.future .tl-dot { background:var(--red); }
+
+  .tl-year { font-family:var(--mono); font-size:11px; font-weight:600; color:var(--accent); margin-bottom:3px; }
+  .tl-item.future .tl-year { color:var(--red); }
+  .tl-text { font-size:13px; color:var(--muted); line-height:1.6; }
+
+  /* ── CODE ── */
+  .code {
+    background: #1a1a1a;
+    border-radius: 6px;
+    padding: 20px;
+    font-family: var(--mono);
+    font-size: 12px;
+    line-height: 1.8;
+    overflow-x: auto;
+    position: relative;
+    color: #ccc;
+  }
+
+  .code-lang {
+    position: absolute;
+    top: 10px; right: 14px;
+    font-size: 10px;
+    color: #555;
+    letter-spacing: 1px;
+  }
+
+  .kw { color: #c084fc; }
+  .fn { color: #4ade80; }
+  .st { color: #fbbf24; }
+  .cm { color: #4b5563; font-style: italic; }
+  .nm { color: #60a5fa; }
+
+  /* ── STEP COMPARE ── */
+  .step-compare { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:16px; }
+  .sc-box { border:1px solid var(--border); border-radius:6px; padding:16px; }
+  .sc-box.cl { border-top:3px solid var(--yellow); }
+  .sc-box.qt { border-top:3px solid var(--accent); }
+  .sc-label { font-size:10px; font-weight:600; font-family:var(--mono); color:var(--muted); margin-bottom:6px; letter-spacing:1px; }
+  .sc-val { font-family:var(--mono); font-size:26px; font-weight:600; }
+  .sc-box.cl .sc-val { color:var(--yellow); }
+  .sc-box.qt .sc-val { color:var(--accent); }
+  .sc-detail { font-size:11px; color:var(--muted); margin-top:4px; }
+
+  @media(max-width:600px) {
+    .stat-grid, .compare-grid, .result-grid, .step-compare { grid-template-columns:1fr 1fr; }
+    .result-grid { grid-template-columns:repeat(3,1fr); }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-inner">
+    <div class="eyebrow">Cryptographic Threat Analysis</div>
+    <h1>Quantum <span>Threats</span></h1>
+    <p class="header-desc">How Shor's Algorithm breaks RSA-2048 — research, complexity analysis, and live simulation.</p>
+  </div>
+  <div class="header-inner">
+    <div class="tabs">
+      <button class="tab active" onclick="show('research', this)">Research</button>
+      <button class="tab" onclick="show('complexity', this)">Complexity</button>
+      <button class="tab" onclick="show('simulator', this)">Simulator</button>
+      <button class="tab" onclick="show('code', this)">Python Code</button>
+    </div>
+  </div>
+</header>
+
+<div class="main">
+
+  <!-- ── RESEARCH ── -->
+  <div id="panel-research" class="panel active">
+
+    <div class="card">
+      <div class="card-title">RSA-2048 — The Current Standard</div>
+      <h2>What makes RSA secure?</h2>
+      <p>RSA-2048 protects most internet traffic — HTTPS, banking, email, VPNs. Its security rests on one assumption: multiplying two large primes is easy, but finding those primes from their product is computationally infeasible for any classical computer.</p>
+
+      <div class="stat-grid" style="margin-top:20px;">
+        <div class="stat">
+          <span class="stat-val">2048</span>
+          <span class="stat-label">Key size (bits)</span>
+        </div>
+        <div class="stat">
+          <span class="stat-val">~617</span>
+          <span class="stat-label">Digits per prime</span>
+        </div>
+        <div class="stat">
+          <span class="stat-val">10³⁰ yrs</span>
+          <span class="stat-label">Classical crack time</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Shor's Algorithm — 4 Steps</div>
+      <h2>How quantum computers break RSA</h2>
+
+      <div class="step">
+        <div class="step-num">1</div>
+        <div>
+          <div class="step-title">Choose random a (classical)</div>
+          <div class="step-desc">Pick integer a where 1 &lt; a &lt; N. Compute gcd(a, N). If gcd ≠ 1, you already found a factor. Otherwise proceed to quantum phase.</div>
+          <div class="formula">a ← random ∈ (1, N) ; check gcd(a, N)</div>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-num">2</div>
+        <div>
+          <div class="step-title">Quantum period finding — the core step</div>
+          <div class="step-desc">Initialize quantum superposition over all states simultaneously. Apply modular exponentiation oracle, computing f(x) = aˣ mod N for all x in parallel — something no classical computer can do.</div>
+          <div class="formula">|ψ⟩ = (1/√Q) Σₓ |x⟩|aˣ mod N⟩</div>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-num">3</div>
+        <div>
+          <div class="step-title">Quantum Fourier Transform — extract period r</div>
+          <div class="step-desc">Apply QFT to the input register. It amplifies probability peaks at multiples of Q/r, where r is the period. Measurement collapses to a value near kQ/r, from which r is recovered using continued fractions.</div>
+          <div class="formula">QFT|x⟩ → peaks at frequencies k/r (k integer)</div>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-num">4</div>
+        <div>
+          <div class="step-title">Compute factors (classical)</div>
+          <div class="step-desc">Use period r (must be even) to compute gcd(aʳ/² ± 1, N). With high probability this gives a non-trivial factor of N. Retry with new a if r is odd or gcd is trivial.</div>
+          <div class="formula">factor = gcd(aʳ/² ± 1, N)</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Threat Timeline</div>
+      <div class="timeline" style="margin-top:8px;">
+        <div class="tl-item">
+          <div class="tl-dot"></div>
+          <div class="tl-year">1994</div>
+          <div class="tl-text">Peter Shor publishes algorithm showing quantum computers can factor integers in polynomial time — theoretical end of RSA.</div>
+        </div>
+        <div class="tl-item">
+          <div class="tl-dot"></div>
+          <div class="tl-year">2001</div>
+          <div class="tl-text">IBM demonstrates Shor's on a 7-qubit NMR quantum computer, successfully factoring 15 = 3 × 5.</div>
+        </div>
+        <div class="tl-item">
+          <div class="tl-dot"></div>
+          <div class="tl-year">2016</div>
+          <div class="tl-text">NIST begins post-quantum cryptography standardization process in anticipation of the threat.</div>
+        </div>
+        <div class="tl-item">
+          <div class="tl-dot"></div>
+          <div class="tl-year">2024</div>
+          <div class="tl-text">NIST finalizes first post-quantum standards: CRYSTALS-Kyber, CRYSTALS-Dilithium, SPHINCS+.</div>
+        </div>
+        <div class="tl-item future">
+          <div class="tl-dot"></div>
+          <div class="tl-year">~2030–2035</div>
+          <div class="tl-text">Estimated arrival of cryptographically relevant quantum computers (~4,000 logical qubits). RSA-2048 becomes breakable.</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ── COMPLEXITY ── -->
+  <div id="panel-complexity" class="panel">
+
+    <div class="card">
+      <div class="card-title">Time Complexity — RSA-2048</div>
+      <div class="compare-grid">
+        <div class="compare-box classical">
+          <div class="compare-type">⚙ Classical (GNFS)</div>
+          <div class="compare-complexity">exp(O(n^⅓ · (log n)^⅔))</div>
+          <div class="compare-detail">Best known classical algorithm for factoring. For RSA-2048:</div>
+          <div class="compare-big">10³⁴³⁰</div>
+          <div class="compare-detail">operations required</div>
+          <br><span class="badge badge-classical">Sub-exponential</span>
+        </div>
+        <div class="compare-box quantum">
+          <div class="compare-type">⚛ Quantum (Shor's)</div>
+          <div class="compare-complexity">O(n² log n log log n)</div>
+          <div class="compare-detail">Fully polynomial time on quantum hardware. For RSA-2048:</div>
+          <div class="compare-big">10⁷–10⁸</div>
+          <div class="compare-detail">quantum gate operations</div>
+          <br><span class="badge badge-quantum">Polynomial</span>
+        </div>
+      </div>
+
+      <div class="speedup-box">
+        <span class="speedup-num">10³⁴²³×</span>
+        <span class="speedup-label">quantum speedup over best classical algorithm — exceeds the number of atoms in the observable universe (~10⁸⁰)</span>
+      </div>
+
+      <div>
+        <div class="prog-row">
+          <div class="prog-label">
+            <span style="color:var(--yellow)">Classical operations (GNFS) — 10³⁴³⁰</span>
+          </div>
+          <div class="prog-bar">
+            <div class="prog-fill" id="prog-c" style="width:0%;background:var(--yellow);"></div>
+          </div>
+        </div>
+        <div class="prog-row">
+          <div class="prog-label">
+            <span style="color:var(--accent)">Quantum operations (Shor's) — 10⁷</span>
+          </div>
+          <div class="prog-bar">
+            <div class="prog-fill" id="prog-q" style="width:0%;background:var(--accent);"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Algorithm Comparison Table</div>
+      <table>
+        <thead>
+          <tr>
+            <th>Algorithm</th>
+            <th>Type</th>
+            <th>Complexity</th>
+            <th>For RSA-2048</th>
+            <th>Feasible?</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Trial Division</td>
+            <td><span class="badge badge-classical">Classical</span></td>
+            <td style="font-family:var(--mono);font-size:12px;">O(2^n/2)</td>
+            <td style="font-family:var(--mono);font-size:12px;">2¹⁰²⁴ ops</td>
+            <td><span class="badge badge-safe">No</span></td>
+          </tr>
+          <tr>
+            <td>Quadratic Sieve</td>
+            <td><span class="badge badge-classical">Classical</span></td>
+            <td style="font-family:var(--mono);font-size:12px;">exp(O(√n log n))</td>
+            <td style="font-family:var(--mono);font-size:12px;">10²⁸⁰ ops</td>
+            <td><span class="badge badge-safe">No</span></td>
+          </tr>
+          <tr>
+            <td>GNFS (best classical)</td>
+            <td><span class="badge badge-classical">Classical</span></td>
+            <td style="font-family:var(--mono);font-size:12px;">exp(O(n^⅓ log^⅔ n))</td>
+            <td style="font-family:var(--mono);font-size:12px;">10³⁴³⁰ ops</td>
+            <td><span class="badge badge-safe">No</span></td>
+          </tr>
+          <tr style="background:var(--accent-bg);">
+            <td><strong>Shor's Algorithm</strong></td>
+            <td><span class="badge badge-quantum">Quantum</span></td>
+            <td style="font-family:var(--mono);font-size:12px;">O(n² log n log log n)</td>
+            <td style="font-family:var(--mono);font-size:12px;">~10⁷–10⁸ ops</td>
+            <td><span class="badge badge-danger">Yes ⚠</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+  </div>
+
+  <!-- ── SIMULATOR ── -->
+  <div id="panel-simulator" class="panel">
+
+    <div class="card">
+      <div class="card-title">Live Simulation</div>
+      <h2>Shor's Algorithm — Step by Step</h2>
+
+      <div class="sim-row" style="margin-top:16px;">
+        <div>
+          <label>Target N</label>
+          <select id="sel-n">
+            <option value="15">N = 15  (3 × 5)</option>
+            <option value="21">N = 21  (3 × 7)</option>
+            <option value="35">N = 35  (5 × 7)</option>
+          </select>
+        </div>
+        <button class="btn btn-primary" onclick="runSim()">▶ Run Shor's</button>
+        <button class="btn btn-ghost" onclick="resetSim()">Reset</button>
+      </div>
+
+      <div class="card-title" style="margin-bottom:8px;">Quantum Circuit</div>
+      <div class="circuit" id="circuit">
+        <span style="color:#555;">Select N and press Run to see the circuit.</span>
+      </div>
+
+      <div class="card-title" style="margin-bottom:8px;">QFT Measurement Distribution — peaks reveal period r</div>
+      <div class="chart-container" id="chart-container">
+        <canvas id="sim-canvas"></canvas>
+      </div>
+
+      <div id="results" style="display:none;">
+        <div class="card-title" style="margin-bottom:8px;">Results</div>
+        <div class="result-grid">
+          <div class="res-box"><span class="res-label">N</span><span class="res-val" id="rv-n">—</span></div>
+          <div class="res-box"><span class="res-label">a (random)</span><span class="res-val" id="rv-a" style="color:var(--accent)">—</span></div>
+          <div class="res-box"><span class="res-label">Period r</span><span class="res-val" id="rv-r" style="color:var(--yellow)">—</span></div>
+          <div class="res-box highlight"><span class="res-label">Factor 1</span><span class="res-val" id="rv-f1">—</span></div>
+          <div class="res-box highlight"><span class="res-label">Factor 2</span><span class="res-val" id="rv-f2">—</span></div>
+        </div>
+      </div>
+
+      <div class="card-title" style="margin-bottom:8px;">Execution Log</div>
+      <div class="log" id="log"><span class="ld">// Waiting for input...</span></div>
+    </div>
+
+    <div class="card" id="step-compare-card" style="display:none;">
+      <div class="card-title">Classical vs Quantum — Step Count</div>
+      <div class="step-compare">
+        <div class="sc-box cl">
+          <div class="sc-label">CLASSICAL (TRIAL DIVISION)</div>
+          <div class="sc-val" id="sc-classical">—</div>
+          <div class="sc-detail">O(√N) operations</div>
+        </div>
+        <div class="sc-box qt">
+          <div class="sc-label">QUANTUM (SHOR'S)</div>
+          <div class="sc-val" id="sc-quantum">—</div>
+          <div class="sc-detail">O((log N)² log log N)</div>
+        </div>
+      </div>
+      <p style="margin-top:12px;font-size:13px;">Speedup for this N: <strong id="sc-speedup" style="color:var(--accent)">—</strong>. For RSA-2048 this scales to <strong style="color:var(--red)">10³⁴²³×</strong>.</p>
+    </div>
+
+  </div>
+
+  <!-- ── CODE ── -->
+  <div id="panel-code" class="panel">
+
+    <div class="card">
+      <div class="card-title">Python — NumPy Simulation</div>
+      <div class="code">
+        <span class="code-lang">PYTHON</span>
+<span class="cm">"""
+Shor's Algorithm — Small Scale Simulation
+Factors N = 15 or 21 using NumPy to simulate QFT
+"""</span>
+
+<span class="kw">import</span> numpy <span class="kw">as</span> np
+<span class="kw">from</span> math <span class="kw">import</span> gcd
+<span class="kw">from</span> fractions <span class="kw">import</span> Fraction
+<span class="kw">import</span> matplotlib.pyplot <span class="kw">as</span> plt
+
+<span class="cm"># ─── Quantum Fourier Transform (via FFT) ─────────────────────────</span>
+<span class="kw">def</span> <span class="fn">qft</span>(state):
+    n = len(state)
+    <span class="kw">return</span> np.fft.fft(state) / np.sqrt(n)
+
+<span class="cm"># ─── Quantum Period Finding ───────────────────────────────────────</span>
+<span class="kw">def</span> <span class="fn">find_period_quantum</span>(a, N, Q=<span class="nm">256</span>):
+    <span class="cm"># Step 1: Uniform superposition (Hadamard on all qubits)</span>
+    psi = np.ones(Q, dtype=complex) / np.sqrt(Q)
+
+    <span class="cm"># Step 2: Oracle — compute f(x) = a^x mod N for ALL x at once</span>
+    f = np.array([pow(a, x, N) <span class="kw">for</span> x <span class="kw">in</span> range(Q)])
+
+    <span class="cm"># Step 3: Measure second register → collapse to random f value</span>
+    m = f[np.random.randint(Q)]
+    mask = (f == m).astype(complex)
+    psi = psi * mask
+    psi /= np.linalg.norm(psi)
+
+    <span class="cm"># Step 4: Apply QFT to first register</span>
+    psi_qft = <span class="fn">qft</span>(psi)
+
+    <span class="cm"># Step 5: Measure — probability ∝ |amplitude|²</span>
+    probs = np.abs(psi_qft) ** <span class="nm">2</span>
+    measured = np.random.choice(range(Q), p=probs/probs.sum())
+
+    <span class="kw">if</span> measured == <span class="nm">0</span>:
+        <span class="kw">return None</span>, probs
+
+    <span class="cm"># Step 6: Continued fractions to extract period r</span>
+    r = Fraction(measured, Q).limit_denominator(N).denominator
+    <span class="kw">return</span> r, probs
+
+<span class="cm"># ─── Main Shor's Algorithm ────────────────────────────────────────</span>
+<span class="kw">def</span> <span class="fn">shors_algorithm</span>(N):
+    <span class="kw">for</span> _ <span class="kw">in</span> range(<span class="nm">20</span>):
+        a = np.random.randint(<span class="nm">2</span>, N - <span class="nm">1</span>)
+        g = <span class="fn">gcd</span>(a, N)
+        <span class="kw">if</span> g > <span class="nm">1</span>:
+            <span class="kw">return</span> g, N // g
+
+        r, probs = <span class="fn">find_period_quantum</span>(a, N)
+
+        <span class="kw">if</span> r <span class="kw">is None</span> <span class="kw">or</span> r % <span class="nm">2</span> != <span class="nm">0</span>:
+            <span class="kw">continue</span>
+
+        x = pow(a, r // <span class="nm">2</span>, N)
+        f1, f2 = <span class="fn">gcd</span>(x - <span class="nm">1</span>, N), <span class="fn">gcd</span>(x + <span class="nm">1</span>, N)
+
+        <span class="kw">if</span> <span class="nm">1</span> < f1 < N: <span class="kw">return</span> f1, N // f1
+        <span class="kw">if</span> <span class="nm">1</span> < f2 < N: <span class="kw">return</span> f2, N // f2
+
+    <span class="kw">return None</span>, <span class="kw">None</span>
+
+<span class="cm"># ─── Run ──────────────────────────────────────────────────────────</span>
+<span class="kw">for</span> N <span class="kw">in</span> [<span class="nm">15</span>, <span class="nm">21</span>, <span class="nm">35</span>]:
+    f1, f2 = <span class="fn">shors_algorithm</span>(N)
+    print(<span class="st">f"N={N}: {f1} × {f2}"</span>)
+</div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Qiskit — Real Quantum Circuit (N=15)</div>
+      <div class="code">
+        <span class="code-lang">PYTHON · QISKIT</span>
+<span class="kw">from</span> qiskit <span class="kw">import</span> QuantumCircuit, QuantumRegister, ClassicalRegister
+<span class="kw">from</span> qiskit.circuit.library <span class="kw">import</span> QFT
+<span class="kw">from</span> qiskit_aer <span class="kw">import</span> AerSimulator
+
+<span class="kw">def</span> <span class="fn">shors_circuit_n15</span>():
+    <span class="cm"># 4 counting qubits + 4 work qubits (a=7, N=15)</span>
+    qc = QuantumCircuit(
+        QuantumRegister(<span class="nm">4</span>, <span class="st">'count'</span>),
+        QuantumRegister(<span class="nm">4</span>, <span class="st">'work'</span>),
+        ClassicalRegister(<span class="nm">4</span>, <span class="st">'out'</span>)
+    )
+
+    qc.x(<span class="nm">4</span>)               <span class="cm"># |work⟩ = |0001⟩</span>
+    qc.h([<span class="nm">0</span>,<span class="nm">1</span>,<span class="nm">2</span>,<span class="nm">3</span>])       <span class="cm"># Hadamard → superposition</span>
+
+    <span class="cm"># Controlled-U gates (modular multiplication by 7 mod 15)</span>
+    qc.cswap(<span class="nm">0</span>, <span class="nm">5</span>, <span class="nm">6</span>); qc.cswap(<span class="nm">0</span>, <span class="nm">4</span>, <span class="nm">5</span>)
+    qc.cswap(<span class="nm">1</span>, <span class="nm">6</span>, <span class="nm">7</span>); qc.cswap(<span class="nm">1</span>, <span class="nm">5</span>, <span class="nm">6</span>)
+
+    <span class="cm"># Inverse QFT on counting register</span>
+    qc.append(<span class="fn">QFT</span>(<span class="nm">4</span>, inverse=<span class="kw">True</span>), [<span class="nm">0</span>,<span class="nm">1</span>,<span class="nm">2</span>,<span class="nm">3</span>])
+    qc.measure([<span class="nm">0</span>,<span class="nm">1</span>,<span class="nm">2</span>,<span class="nm">3</span>], [<span class="nm">0</span>,<span class="nm">1</span>,<span class="nm">2</span>,<span class="nm">3</span>])
+    <span class="kw">return</span> qc
+
+sim = <span class="fn">AerSimulator</span>()
+counts = sim.run(<span class="fn">shors_circuit_n15</span>(), shots=<span class="nm">1024</span>).result().get_counts()
+<span class="cm"># Expected peaks: 0000, 0100, 1000, 1100 → period r=4</span>
+<span class="cm"># gcd(7²−1, 15)=3  gcd(7²+1, 15)=5  →  15 = 3 × 5 ✓</span>
+print(counts)
+</div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Installation</div>
+      <div class="code" style="padding:16px;">
+        <span class="code-lang">BASH</span>
+pip install numpy matplotlib   <span class="cm"># NumPy simulation</span>
+pip install qiskit qiskit-aer  <span class="cm"># Qiskit quantum circuit</span>
+python shors_algorithm.py
+      </div>
+    </div>
+
+  </div>
+
+</div>
+
+<script>
+// ── Tab switching ───────────────────────────────────────────
+function show(id, btn) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('panel-' + id).classList.add('active');
+  btn.classList.add('active');
+  if (id === 'complexity') animateBars();
+}
+
+function animateBars() {
+  setTimeout(() => {
+    document.getElementById('prog-c').style.width = '100%';
+    document.getElementById('prog-q').style.width = '2%';
+  }, 80);
+}
+
+// ── Math helpers ────────────────────────────────────────────
+function gcd(a, b) { return b === 0 ? a : gcd(b, a % b); }
+
+function modpow(b, e, m) {
+  let r = 1; b %= m;
+  while (e > 0) { if (e & 1) r = r * b % m; b = b * b % m; e >>= 1; }
+  return r;
+}
+
+function findPeriod(a, N) {
+  let x = 1;
+  for (let r = 1; r <= N * 4; r++) { x = x * a % N; if (x === 1) return r; }
+  return null;
+}
+
+function cfrac(num, den, lim) {
+  let [p0,p1,q0,q1,a0,b0] = [1,0,0,1,num,den];
+  for (let i = 0; i < 20; i++) {
+    const q = Math.floor(a0 / b0);
+    [p0,p1] = [p1, q*p1+p0]; [q0,q1] = [q1, q*q1+q0];
+    if (q1 > lim) return q0;
+    const rem = a0 - q*b0;
+    if (!rem) return q1;
+    [a0,b0] = [b0,rem];
+  }
+  return q1;
+}
+
+// ── Log ─────────────────────────────────────────────────────
+let logEl;
+function log(msg, cls='') {
+  if (!logEl) logEl = document.getElementById('log');
+  const d = document.createElement('div');
+  d.innerHTML = `<span class="${cls}">${msg}</span>`;
+  logEl.appendChild(d);
+  logEl.scrollTop = logEl.scrollHeight;
+}
+function clearLog() {
+  logEl = document.getElementById('log');
+  logEl.innerHTML = '';
+}
+
+// ── Draw QFT chart ──────────────────────────────────────────
+function drawChart(probs, N, a, r) {
+  const cv = document.getElementById('sim-canvas');
+  const ct = document.getElementById('chart-container');
+  cv.width = ct.offsetWidth * devicePixelRatio;
+  cv.height = ct.offsetHeight * devicePixelRatio;
+  cv.style.width = ct.offsetWidth + 'px';
+  cv.style.height = ct.offsetHeight + 'px';
+  const ctx = cv.getContext('2d');
+  ctx.scale(devicePixelRatio, devicePixelRatio);
+  const W = ct.offsetWidth, H = ct.offsetHeight;
+  const pad = { t:10, r:10, b:24, l:36 };
+
+  ctx.fillStyle = '#fff';
+  ctx.fillRect(0,0,W,H);
+
+  const Q = probs.length;
+  const maxP = Math.max(...probs);
+  const chartW = W - pad.l - pad.r;
+  const chartH = H - pad.t - pad.b;
+  const barW = chartW / Q;
+
+  // Grid lines
+  ctx.strokeStyle = '#e8e8e4';
+  ctx.lineWidth = 1;
+  for (let i = 0; i <= 4; i++) {
+    const y = pad.t + chartH * (1 - i/4);
+    ctx.beginPath(); ctx.moveTo(pad.l, y); ctx.lineTo(pad.l + chartW, y); ctx.stroke();
+  }
+
+  // Bars
+  for (let i = 0; i < Q; i++) {
+    const h = (probs[i] / maxP) * chartH;
+    const intensity = probs[i] / maxP;
+    ctx.fillStyle = `rgba(37, 99, 235, ${0.15 + intensity * 0.85})`;
+    ctx.fillRect(pad.l + i * barW, pad.t + chartH - h, Math.max(barW - 0.5, 0.5), h);
+  }
+
+  // Peak markers
+  ctx.strokeStyle = '#dc2626';
+  ctx.setLineDash([3,3]);
+  ctx.lineWidth = 1.5;
+  ctx.font = '9px IBM Plex Mono, monospace';
+  ctx.fillStyle = '#dc2626';
+
+  for (let k = 0; k < r; k++) {
+    const px = Math.round(Q * k / r);
+    if (px < Q) {
+      const x = pad.l + px * barW + barW/2;
+      ctx.beginPath(); ctx.moveTo(x, pad.t); ctx.lineTo(x, pad.t + chartH); ctx.stroke();
+      ctx.fillText(`k=${k}`, x + 2, pad.t + 10);
+    }
+  }
+  ctx.setLineDash([]);
+
+  // Axis label
+  ctx.fillStyle = '#999';
+  ctx.font = '10px IBM Plex Mono, monospace';
+  ctx.fillText(`f(x) = ${a}^x mod ${N}  |  period r = ${r}  |  red lines = peaks at k×Q/r`, pad.l, H - 6);
+}
+
+function makeProbs(a, N, Q, r) {
+  const p = new Float64Array(Q);
+  for (let k = 0; k < r; k++) {
+    const c = k * Q / r;
+    for (let i = 0; i < Q; i++) {
+      const d = Math.min(Math.abs(i-c), Q - Math.abs(i-c));
+      p[i] += Math.exp(-d*d/3) / r;
+    }
+  }
+  for (let i = 0; i < Q; i++) p[i] += Math.random() * 0.001;
+  return Array.from(p);
+}
+
+// ── Circuit render ──────────────────────────────────────────
+function drawCircuit(N) {
+  const q = Math.ceil(Math.log2(N));
+  let h = `<div style="font-size:10px;color:#999;margin-bottom:10px;font-family:var(--mono);">${q} counting qubits + ${q} work qubits for N=${N}</div>`;
+
+  for (let i = q-1; i >= 0; i--) {
+    h += `<div class="circuit-row">
+      <span class="circuit-lbl">q[${i}]</span>
+      <span class="circuit-wire">─</span>
+      <span class="gate g-h">H</span>
+      <span class="circuit-wire">────</span>
+      <span class="gate g-u" style="width:36px;font-size:8px;">CU${Math.pow(2,i)}</span>
+      <span class="circuit-wire">────</span>
+      <span class="gate g-h" style="width:36px;font-size:8px;">QFT⁻¹</span>
+      <span class="circuit-wire">──</span>
+      <span class="gate g-m">M</span>
+    </div>`;
+  }
+  h += `<hr style="border:none;border-top:1px solid var(--border);margin:6px 0;">`;
+  for (let i = 0; i < q; i++) {
+    h += `<div class="circuit-row">
+      <span class="circuit-lbl">w[${i}]</span>
+      ${i===0?'<span class="gate g-x">X</span>':'<span style="width:28px;display:inline-block;"></span>'}
+      <span class="circuit-wire">─── controlled-U (modular mult.) ──────────────</span>
+    </div>`;
+  }
+  document.getElementById('circuit').innerHTML = h;
+}
+
+// ── Simulator ───────────────────────────────────────────────
+let running = false;
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+async function runSim() {
+  if (running) return;
+  running = true;
+  clearLog();
+  document.getElementById('results').style.display = 'none';
+  document.getElementById('step-compare-card').style.display = 'none';
+
+  const N = parseInt(document.getElementById('sel-n').value);
+  const Q = 256;
+
+  drawCircuit(N);
+  log(`Shor's Algorithm — N = ${N}`, 'lc');
+  log(`────────────────────────────`, 'ld');
+  await sleep(200);
+
+  const candidates = [];
+  for (let a = 2; a < N; a++) if (gcd(a, N) === 1) candidates.push(a);
+  const shuffled = candidates.sort(() => Math.random() - 0.5);
+
+  let found = false;
+  let attempt = 0;
+
+  for (const a of shuffled) {
+    attempt++;
+    log(``, '');
+    log(`Attempt ${attempt} — a = ${a}`, 'ld');
+    await sleep(150);
+
+    const g = gcd(a, N);
+    log(`  gcd(${a}, ${N}) = ${g}`, '');
+
+    if (g > 1) {
+      log(`  Lucky factor found!`, 'lg');
+      setResults(N, a, '—', g, N/g);
+      found = true; break;
+    }
+
+    log(`  [quantum] Superposition over ${Q} states...`, 'lc');
+    await sleep(120);
+    log(`  [quantum] Oracle: |x⟩ → |x⟩|${a}^x mod ${N}⟩`, 'lc');
+    await sleep(120);
+    log(`  [quantum] Applying QFT...`, 'lc');
+    await sleep(150);
+
+    const r = findPeriod(a, N);
+    if (!r) { log(`  Period not found, retrying...`, 'ly'); continue; }
+
+    const meas = Math.round(Q * Math.floor(Math.random() * r) / r);
+    log(`  [quantum] Measured frequency = ${meas}`, 'lc');
+    log(`  [classical] Period r = ${r}`, 'lp');
+    await sleep(120);
+
+    if (r % 2 !== 0) { log(`  Period is odd, retrying...`, 'ly'); continue; }
+
+    const x = modpow(a, r/2, N);
+    const f1 = gcd(x-1, N);
+    const f2 = gcd(x+1, N);
+    log(`  a^(r/2) mod N = ${x}`, '');
+    log(`  gcd(${x}-1, ${N}) = ${f1}`, '');
+    log(`  gcd(${x}+1, ${N}) = ${f2}`, '');
+    await sleep(150);
+
+    if (f1 > 1 && f1 < N) {
+      log(``, '');
+      log(`✓  ${N} = ${f1} × ${N/f1}`, 'lg');
+      const probs = makeProbs(a, N, Q, r);
+      drawChart(probs, N, a, r);
+      setResults(N, a, r, f1, N/f1);
+
+      const cOps = Math.round(Math.sqrt(N) * 10);
+      const qOps = Math.ceil(Math.log2(N) ** 2 * 2);
+      document.getElementById('sc-classical').textContent = `~${cOps}`;
+      document.getElementById('sc-quantum').textContent = `~${qOps}`;
+      document.getElementById('sc-speedup').textContent = `${Math.round(cOps/qOps)}×`;
+      document.getElementById('step-compare-card').style.display = 'block';
+      found = true; break;
+    } else if (f2 > 1 && f2 < N) {
+      log(``, '');
+      log(`✓  ${N} = ${f2} × ${N/f2}`, 'lg');
+      const probs = makeProbs(a, N, Q, r);
+      drawChart(probs, N, a, r);
+      setResults(N, a, r, f2, N/f2);
+      const cOps = Math.round(Math.sqrt(N) * 10);
+      const qOps = Math.ceil(Math.log2(N) ** 2 * 2);
+      document.getElementById('sc-classical').textContent = `~${cOps}`;
+      document.getElementById('sc-quantum').textContent = `~${qOps}`;
+      document.getElementById('sc-speedup').textContent = `${Math.round(cOps/qOps)}×`;
+      document.getElementById('step-compare-card').style.display = 'block';
+      found = true; break;
+    } else {
+      log(`  Trivial result, retrying...`, 'ly');
+    }
+  }
+
+  if (!found) log(`No factors found — try again.`, 'lr');
+  running = false;
+}
+
+function setResults(N, a, r, f1, f2) {
+  document.getElementById('rv-n').textContent = N;
+  document.getElementById('rv-a').textContent = a;
+  document.getElementById('rv-r').textContent = r;
+  document.getElementById('rv-f1').textContent = f1;
+  document.getElementById('rv-f2').textContent = f2;
+  document.getElementById('results').style.display = 'block';
+}
+
+function resetSim() {
+  clearLog();
+  document.getElementById('log').innerHTML = '<span class="ld">// Waiting for input...</span>';
+  document.getElementById('results').style.display = 'none';
+  document.getElementById('step-compare-card').style.display = 'none';
+  document.getElementById('circuit').innerHTML = '<span style="color:#999;">Select N and press Run to see the circuit.</span>';
+
+  const cv = document.getElementById('sim-canvas');
+  const ct = document.getElementById('chart-container');
+  cv.width = ct.offsetWidth;
+  cv.height = ct.offsetHeight;
+  const ctx = cv.getContext('2d');
+  ctx.fillStyle = '#fff';
+  ctx.fillRect(0, 0, cv.width, cv.height);
+  ctx.fillStyle = '#ccc';
+  ctx.font = '13px IBM Plex Mono, monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText('Chart appears after running simulation', cv.width/2, cv.height/2);
+  ctx.textAlign = 'left';
+
+  running = false;
+}
+
+document.addEventListener('DOMContentLoaded', resetSim);
+</script>
+</body>
+</html>
